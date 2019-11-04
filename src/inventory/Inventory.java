@@ -1,262 +1,140 @@
 package inventory;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
+import memento.Memento;
+import serial.Book;
 
-import command.command;
-import command.fileSaveOnCommand;
-import command.saveFile;
-import command.saveFileControl;
-import memento.CareTaker;
-import memento.Originator;
-import serial.addBook;
-
-public class Inventory {
-
-	Originator originator = new Originator();
-    CareTaker careTaker = new CareTaker();
+public class Inventory implements InventoryInterface {
     
-    saveFileControl savefilecontrol = new saveFileControl();
-    saveFile savefile = new saveFile();
-    
-    ArrayList<addBook> addbook = new ArrayList<addBook>();
-    ArrayList<addBook> getAddbook = new ArrayList<addBook>();
-    
-	private Connection connect = null;
-	private Statement statement = null;
-	private ResultSet resultSet = null;
+	private ArrayList<serial.Book> BookArray = new ArrayList<Book>();
+	private Memento memento = new Memento();
+	private InventoryStockDecorator invent ;
+	private Integer numberOfState=0, timeToSave =3;
+	private String CommandFileName = "item.txt";
 	
-	int menuNum,bookPrice,bookQuantity,exit=0,searchBookbyNum;
-	String bookName = "",searchBookbyName = "";
-	String filename = "inventoryStock.txt";
-	int n=0,i;
-	public Inventory() {
-		
+	public ArrayList<Book> getBookArray() {
+		return BookArray;
 	}
-	
-	
-	public void connectToDB() throws Exception {
-		try {
-			// This will load the MySQL driver, each DB has its own driver
-			Class.forName("com.mysql.cj.jdbc.Driver");
-			// Setup the connection with the DB
-			connect = DriverManager.getConnection("jdbc:mysql://127.0.0.1/test?serverTimezone=PST8PDT","root","");
-		} catch (Exception e) {
-			throw e;
-		}
+	public void setBookArray(ArrayList<Book> BookArray) {
+		this.BookArray = BookArray;
 	}
-	
-	public void addBook(String name, int price, int quantity) throws Exception {
-		statement = connect.createStatement();
-		resultSet = statement.executeQuery("select * from addBook where name = " + '"' + name + '"');
-		String bookNameOld = "";
-		int quantityOld = 0;
-		while (resultSet.next()) {
-			bookNameOld = resultSet.getString("name");
-			quantityOld = resultSet.getInt("quantity");
-		}
-		if(bookNameOld.equals(name)) {
-			try {
-				System.out.println("----Book available in inventory !!----");
-			} catch (Exception e) {
-				throw e;
-			}
-		}else {
-		try {
-			statement = connect.createStatement();
-			statement.executeUpdate("INSERT INTO addBook(id,name,price,quantity) VALUES (NULL,'" + name + "','" + price
-					+ "','" + quantity + "')");
-		} catch (Exception e) {
-			throw e;
-		}
-		}
-	}
-	
-	public void increaseQuantityBook(String name, int quantity) throws Exception {
-		statement = connect.createStatement();
-		resultSet = statement.executeQuery("select * from addBook where name = " + '"' + name + '"');
-		String bookNameOld = "";
-		int quantityOld = 0;
-		while (resultSet.next()) {
-			bookNameOld = resultSet.getString("name");
-			quantityOld = resultSet.getInt("quantity");
-		}
-		if(bookNameOld.equals(name)) {
-			try {
-				int quantityNew = quantityOld + quantity;
-				statement = connect.createStatement();
-				statement.execute("UPDATE addBook SET quantity = "+ '"' + quantityNew + '"'+ "where name = " + '"' + name + '"');
-			} catch (Exception e) {
-				throw e;
-			}
-		}else {
-		}
-	}
-	
-	public void changePriceBook(String name, int newprice) throws Exception {
-		try {
-				statement = connect.createStatement();
-				statement.execute("UPDATE addBook SET price = "+ '"' + newprice + '"'+ "where name = " + '"' + name + '"');
-			} catch (Exception e) {
-				throw e;
+	public void addBook(serial.Book book){
+		int check = 0,index = 0;
+		for(int i=0;i<BookArray.size();i++) {
+			if (BookArray.get(i).getName().equals(book.getName()) && BookArray.get(i).getPrice() == book.getPrice()) {
+			check = 1;
+			index = i;
+			//System.out.print(book.getQuantity() + BookArray.get(index).getQuantity());
 			}
 		}
-	
-	
-	public void searchByName(String bookname) throws Exception {
-		try {
-			statement = connect.createStatement();
-			resultSet = statement.executeQuery("select * from addBook where name = " + '"' + bookname + '"');
-			System.out.println("\n..........Result for search by Name..........");
-			System.out.print("Book ID\t|\tBook Name\t|\tPrice\t|\tQuantity\n");
-			if(!resultSet.next()) {
-				System.out.println("\nNot Found! By name is " + bookname);
-		}else {
-			while (resultSet.next()) {
-				int Id = resultSet.getInt("id");
-				String bookName = resultSet.getString("name");
-				int price = resultSet.getInt("price");
-				int quantity = resultSet.getInt("quantity");
-				System.out.println(String.format("%d\t\t%s\t\t%d\t\t%d", Id, bookName, price, quantity));
+		if(check == 1) {
+				for(Book book1 : BookArray) {
+			if (book1.getName().equals(book.getName())) {
+				book1.setQuantity(book.getQuantity()+book1.getQuantity());
+				if(++numberOfState == timeToSave){
+					this.saveState();
+	    		numberOfState=0;
+					}
+				//System.out.println(book1.getQuantity());
 			}
 		}
-		} catch (Exception e) {
-			throw e;
-		}
-	}
-
-	public void searchById(int bookid) throws Exception {
-		try {
-			statement = connect.createStatement();
-			resultSet = statement.executeQuery("select * from addBook where id = " + bookid);
-			System.out.println("\n..........Result for search by ID..........");
-			System.out.print("Book ID\t|\tBook Name\t|\tPrice\t|\tQuantity\n");
-			if(!resultSet.next()) {
-					System.out.println("\nNot Found! By ID of " + bookid);
+				System.out.println(book.getName()+" is already(increase quantity SUCCESS!!)");
 			}else {
-			while (resultSet.next()) {
-				int Id = resultSet.getInt("id");
-				String bookName = resultSet.getString("name");
-				int price = resultSet.getInt("price");
-				int quantity = resultSet.getInt("quantity");
-				System.out.println(String.format("%d\t\t%s\t\t%d\t\t%d", Id, bookName, price, quantity));
+				BookArray.add(book);
+				if(++numberOfState == timeToSave){
+					this.saveState();
+	    		numberOfState=0;
+					}
+				System.out.println(book.getName()+" Add SUCCESS!!");
 			}
-			}
-		} catch (Exception e) {
-			throw e;
 		}
-		
+	public void sellBook(String bookName,int decreaseQuantity){
+		for(Book book : BookArray){
+			if(book.getName().equals(bookName) && book.getQuantity() > 0){
+				book.changeQuantity(-decreaseQuantity);
+				if(++numberOfState == timeToSave){
+			    	this.saveState();
+			    	numberOfState=0;
+			    }
+				return ;
+			}	
+		}
 	}
-	
-	public void showBook() throws Exception {
-		try {
-			statement = connect.createStatement();
-			resultSet = statement.executeQuery("select * from addBook");
-			System.out.print("Book ID\t|\tBook Name\t|\tPrice\t|\tQuantity\n");
+	public void CopyBook(String bookName, Integer NumberOfCopy ){
+		for(Book book : BookArray){
 			
-			while (resultSet.next()) {
-				int Id = resultSet.getInt("id");
-				String bookName = resultSet.getString("name");
-				int price = resultSet.getInt("price");
-				int quantity = resultSet.getInt("quantity");
-				System.out.println(String.format("%d\t\t%s\t\t%d\t\t%d", Id, bookName, price, quantity));
-				addbook.add(new addBook(Id,bookName,price,quantity));
-				n = n+1;
+			if(book.getName().equals(bookName)){
+				book.changeQuantity(NumberOfCopy);
+				if(++numberOfState == timeToSave){
+			    	this.saveState();
+			    	numberOfState=0;
+			    }	
 			}
-		} catch (Exception e) {
-			throw e;
 		}
 	}
-	
-	public void saveToMemento(Inventory inventory) {
-		originator.setState(inventory);
-	    careTaker.add(originator.saveStateToMemento());
-	    
-	      System.out.println(".......!! Save !!.......");
-
+	public void changePrice(String bookName,Integer newPrice){
+		for(Book book : BookArray){
+			
+			if(book.getName().equals(bookName)){
+				book.setPrice(newPrice);
+				if(++numberOfState == timeToSave){
+			    	this.saveState();
+			    	numberOfState=0;
+			    }
+			}
+		}
 	}
-	
-	public void saveInventorytoFile() {
-		 try
-	      {    
-	          //Saving of object in a file 
-	          FileOutputStream file = new FileOutputStream(filename); 
-	          ObjectOutputStream out = new ObjectOutputStream(file); 
-	            
-	          out.writeObject(addbook);
-	            
-	          out.close();
-	          file.close(); 
-	            
-	          System.out.println("Object has been serialized"); 
-
-	      } 
-	      catch(IOException ex) 
-	      { 
-	          System.out.println("IOException is caught"); 
-	      } 
-
+	public Integer findPriceByName(String bookName){
+		int price=0;
+		for(Book book : BookArray){
+			if(book.getName().equals(bookName)){
+				price = book.getPrice();
+			}
+		}
+		return price;
 	}
-	
-	public Inventory getMementoRestore() {
-		originator.getStateFromMemento(careTaker.get(0));
-	    return originator.getState();
+	public Integer findPriceByID(Integer bookID) {
+		int price = 0 ;
+		for(Book book : BookArray){
+			if(book.getUniqueID().equals(bookID)){
+				price = book.getPrice();
+			}
+		}
+		return price;
 	}
-	
-	public void getInventoryFromFile() {
-		getAddbook =null;
+	public Integer findQuantityByName(String bookName){
+		int quantity = 0;
+		for(Book book : BookArray){
+			if(book.getName().equals(bookName)){
+				quantity = book.getQuantity();
+			}	
+		}
+		return quantity;
+	}
+	public Integer findQuantityByID(Integer bookID){
+		int quantity = 0;
+		for(Book book : BookArray){
+			
+			if(book.getUniqueID().equals(bookID)){
+				quantity = book.getQuantity();
+			}
+		}
+		return quantity;
+	}
+	public void saveState(){
+	    memento.saveState(BookArray);
+	    File file = new File(CommandFileName);
+		file.delete();
 		try {
-			// Reading the object from a file
-			FileInputStream file = new FileInputStream(filename);
-			ObjectInputStream in = new ObjectInputStream(file);
-
-			// Method for deserialization of object
-			getAddbook = (ArrayList) in.readObject();
-
-			in.close();
-			file.close();
-
-			System.out.print("Book ID\t|\tBook Name\t|\tPrice\t|\tQuantity\n");
-			for (i = 0; i < getAddbook.size(); i++) {
-				System.out.println(getAddbook.get(i).id + "\t\t" + getAddbook.get(i).name + "\t\t" + getAddbook.get(i).price
-						+ "\t\t" + getAddbook.get(i).quantity);
-			}
-		} catch (IOException ex) {
-			System.out.println("IOException is caught");
-		} catch (ClassNotFoundException ex) {
-			System.out.println("ClassNotFoundException is caught");
+			file.createNewFile();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
-	
-	public void Save() {
-		 command saveFileOn = new fileSaveOnCommand(savefile);
-		savefilecontrol.setCommand(saveFileOn);
-		savefilecontrol.pressButton();
+	public void getState(){
+		invent.getState(); 
+		BookArray = (invent.getInventory().getBookArray());
 	}
-	// You need to close the resultSet
-		public void close() {
-			try {
-				if (resultSet != null) {
-					resultSet.close();
-				}
-
-				if (statement != null) {
-					statement.close();
-				}
-
-				if (connect != null) {
-					connect.close();
-				}
-			} catch (Exception e) {
-
-			}
-		}
 }

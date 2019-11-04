@@ -1,15 +1,17 @@
 package memento;
 
-import inventory.Inventory;
+import java.util.ArrayList;
 
-public class Memento {
-		   private Inventory state;
+@SuppressWarnings("serial")
+public class Memento implements java.io.Serializable{
 
-		   public Memento(Inventory state){
-		      this.state = state;
-		   }
-
-		   public Inventory getState(){
-		      return state;
-		   }	
-		}
+	///////saveState for new book//////////
+	private ArrayList<serial.Book> bookArray;
+	public void saveState(ArrayList<serial.Book> arrayList){
+		this.bookArray = new ArrayList<serial.Book>(arrayList);
+	}
+	///////call state book//////////
+	public ArrayList<serial.Book> getState(){
+		return this.bookArray;
+	}
+}

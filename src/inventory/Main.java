@@ -1,45 +1,56 @@
 package inventory;
+import serial.Book;
 
 public class Main {
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args){
 	    
-		System.out.println("\t\t******** Welcome ********");
-		Inventory inventory = new Inventory();
-	    inventory.connectToDB();
-		////////Show Book/////////////
-	    inventory.showBook();
+		InventoryStockDecorator stock = new InventoryStockDecorator();
+		InventoryStockDecorator stockSave = new InventoryStockDecorator();
+		int price,quantity;
 		
-		//inventory.saveToMemento(inventory);
-		//Inventory i = inventory.getMementoRestore();
-		//i.showBook();
+		/////Add
+		System.out.println("-----------Add book----------");
+		stock.addBook(new Book("Java",250,20));
+		stock.addBook(new Book("data",24450,25));
+		stock.addBook(new Book("python",500,21));
 		
-		////////Add New Book///////////
-		//inventory.addBook("Python 4.0", 700, 5);
+		stock.addBook(new Book("Java",250,22));
+		stock.addBook(new Book("Java",250,22));
+		price = stock.findPriceByID(1);
+		System.out.println(stock.getInventory().getBookArray().get(0).getName() + " price = " + price);
+		quantity = stock.findQuantityByID(1);
+		System.out.println(stock.getInventory().getBookArray().get(0).getName() + " quantity = " + quantity);
 		
-		////////Change price//////////
-		//inventory.changePriceBook("Python 4.0", 7000);
+		////Change price
+		System.out.println("-----------Change Price----------");
+		stock.changePrice("Java", 300);
+		price = stock.findPriceByID(1);
+		System.out.println(stock.getInventory().getBookArray().get(0).getName() + " newprice = " + price);
 		
-		////////increase quantity//////////
-		//inventory.increaseQuantityBook("Python 4.0", 40);
+		///Sell
+//		System.out.println("-----------Sell----------");
+//		stock.sellBook("Java",5);
+//		quantity = stock.findQuantityByID(1);
+//		System.out.println(stock.getInventory().getBookArray().get(0).getName() + " amount = " + quantity);
 		
-		////////search by id//////////
-		//inventory.searchById(11);
+		////copy /// book will increase quantity
+//		System.out.println("-----------Copy----------");
+//		stock.CopyBook("Java", 20);
+//		quantity = stock.findQuantityByID(1);
+//		System.out.println(stock.getInventory().getBookArray().get(0).getName() + " amount = " + quantity);
+		stock.saveState();
 		
-		////////search by name//////////
-		//inventory.searchByName("gg");
-		System.out.println("\n---------------------Current Inventory------------------------------");
-	    //inventory.saveToMemento(inventory);
-	    //Inventory i = inventory.getMementoRestore();
-	    //i.showBook();
-		//inventory.showBook();
-		
-		//inventory.Save();
-		//inventory.saveToMemento(inventory);
-		//inventory.saveInventorytoFile();
-		//inventory.getInventoryFromFile();
-		//inventory.getMementoRestore();
-		inventory.close();
+		/////save state////
+//		System.out.println("-----------State Restore----------");
+//		
+		stockSave.getState();
+		quantity = stockSave.findQuantityByID(1);
+		System.out.println(stockSave.getInventory().getBookArray().get(0).getName() + " amount = " + quantity);
+		price = stockSave.findPriceByID(1);
+		System.out.println(stockSave.getInventory().getBookArray().get(0).getName() + " price = " + price);
 }
 }
+
+
 	

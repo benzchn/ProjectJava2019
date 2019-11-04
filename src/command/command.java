@@ -1,5 +1,8 @@
 package command;
 
-public interface command {
-		  public void execute();
+import inventory.Inventory;
+
+public abstract class Command {
+	
+	public abstract void execute(Inventory newInvent);
 }
